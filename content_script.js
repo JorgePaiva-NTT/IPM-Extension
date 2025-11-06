@@ -15,10 +15,10 @@ const pages = [
   { url: "progress.html", handler: processProgressPage },
 ];
 
-pages.forEach(({ url, handler }) => {
+pages.forEach(async ({ url, handler }) => {
   if (window.location.href.includes(`${baseUrl}${url}`) || url.length === 0) {
     try {
-      handler();
+      await handler();
     } catch (error) {
       console.log(`Error processing ${url}:`, error);
     }
@@ -424,7 +424,34 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-function processTaskDashboard() {
+async function processTaskDashboard() {
+  const table = document.querySelector("#tbl_tasks");
+  if (!table) return;
+
+  // Set width for "Criador/Responsável" column
+  const headerRows = table.querySelectorAll("thead tr");
+  if (headerRows.length > 0) {
+    const labelHeader = headerRows[0];
+    const creatorHeaderCell = Array.from(labelHeader.cells).find(
+      (cell) => cell.textContent.trim() === "Criador/Responsável"
+    );
+
+    if (creatorHeaderCell) {
+      const newWidth = "220px";
+      creatorHeaderCell.style.width = newWidth;
+
+      // Apply to corresponding filter cell for alignment
+      if (headerRows.length > 1) {
+        const filterHeader = headerRows[1];
+        const filterCell = filterHeader.cells[creatorHeaderCell.cellIndex];
+        if (filterCell) filterCell.style.width = newWidth;
+      }
+    }
+  }
+
+  await addClientContactColumn();
+  removeUnusedColumns();
+
   let headers = document.querySelectorAll(
     "#tbl_tasks > tbody > tr[data-title=data-subtitle]"
   );
@@ -526,6 +553,208 @@ function processTaskDashboard() {
     if (filterGroup) {
       filterGroup[0].style.marginTop = "5px";
       filterGroup[1].classList.add("pt-0");
+    }
+  }
+
+  /**
+   * Adds a "Contacto" column to the task dashboard table by fetching client contact information
+   * from the clients page and inserting it next to the "Projeto" column.
+   */
+  async function addClientContactColumn() {
+    const clientContactsUrl = `${baseUrl}clients.html`;
+    const clientContacts = await fetchAndParseClientContacts(clientContactsUrl);
+
+    const contactMap = new Map(
+      clientContacts.map((c) => [c.Nome.trim().toLowerCase(), c.Telefone])
+    );
+
+    const table = document.querySelector("#tbl_tasks");
+    if (!table) return;
+
+    const headerRows = table.querySelectorAll("thead tr");
+    if (headerRows.length < 2) return;
+
+    const labelHeader = headerRows[0];
+    const projectHeaderCell = Array.from(labelHeader.cells).find(
+      (cell) => cell.textContent.trim() === "Projeto"
+    );
+
+    if (projectHeaderCell) {
+      const contactHeader = document.createElement("th");
+      contactHeader.textContent = "Contacto";
+      projectHeaderCell.insertAdjacentElement("afterend", contactHeader);
+      const filterHeader = headerRows[1];
+      contactHeader.style.maxWidth = "120px";
+      const projectFilterCell = filterHeader.cells[projectHeaderCell.cellIndex];
+      if (projectFilterCell) {
+        const emptyFilterCell = document.createElement("th");
+        projectFilterCell.insertAdjacentElement("afterend", emptyFilterCell);
+      }
+    }
+
+    const taskRows = table.querySelectorAll("tbody tr.searchable");
+    taskRows.forEach((row) => {
+      const projectCell = row.querySelector("td.t_project");
+      if (!projectCell) return;
+
+      const projectData = row.dataset.project || "";
+      const clientName = projectData.split(" - ")[0].trim().toLowerCase();
+      let foundContact = "";
+
+      for (const [fullClientName, phoneNumber] of contactMap.entries()) {
+        if (fullClientName.includes(clientName)) {
+          foundContact = phoneNumber;
+          break;
+        }
+        if (clientName.includes(fullClientName)) {
+          foundContact = phoneNumber;
+          break;
+        }
+      }
+
+      const contactCell = document.createElement("td");
+      contactCell.classList.add("t_contact");
+      contactCell.style.maxWidth = "120px";
+      contactCell.style.whiteSpace = "normal";
+      contactCell.style.wordBreak = "break-word";
+
+      let formattedContact = foundContact;
+      if (foundContact) {
+        const numbers = foundContact.split(/[,;\/]+/);
+        const cleanedNumbers = numbers.filter((n) => n.trim() !== "");
+        if (cleanedNumbers.length > 1) {
+          formattedContact = cleanedNumbers.join("<br>");
+        }
+      }
+      contactCell.innerHTML = formattedContact;
+      projectCell.insertAdjacentElement("afterend", contactCell);
+    });
+  }
+
+  /**
+   * Fetches the content of a given URL, parses it as HTML, and extracts client contact information
+   * from a table with the ID 'tbl_social_clients'.
+   *
+   * @param {string} url The URL of the page to fetch and parse.
+   * @returns {Promise<Array<Object>>} A promise that resolves to an array of objects,
+   * where each object contains the 'Nome' and 'Telefone' of a client.
+   * Returns an empty array if the page cannot be fetched or the table is not found.
+   */
+  async function fetchAndParseClientContacts(url) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error(`Failed to fetch ${url}: ${response.statusText}`);
+        return [];
+      }
+      const htmlText = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlText, "text/html");
+
+      const table = doc.querySelector("table#tbl_social_clients");
+      const data = [];
+
+      if (table) {
+        const headerCells = Array.from(table.querySelectorAll("thead th"));
+        const nomeColIndex = headerCells.findIndex(
+          (cell) => cell.textContent.trim() === "Nome Abrev."
+        );
+        const telefoneColIndex = headerCells.findIndex(
+          (cell) => cell.textContent.trim() === "Telefone"
+        );
+
+        if (nomeColIndex !== -1 && telefoneColIndex !== -1) {
+          const bodyRows = table.querySelectorAll("tbody tr");
+          bodyRows.forEach((row) => {
+            const cells = row.children;
+            if (cells[nomeColIndex] && cells[telefoneColIndex]) {
+              data.push({
+                Nome: cells[nomeColIndex].textContent.trim(),
+                Telefone: cells[telefoneColIndex].textContent.trim(),
+              });
+            }
+          });
+        }
+      }
+      return data;
+    } catch (error) {
+      console.error("Error fetching or parsing client contacts:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Remove colunas não utilizadas na tabela de tarefas
+   */
+  function removeUnusedColumns() {
+    // Columns to remove (exact text, trimmed comparison)
+    const headerTextsToRemove = [
+      "Data prevista início",
+      "Data início",
+      "Data prevista fim",
+      "Data fim",
+    ];
+
+    // Helper to normalize text for comparison
+    const norm = (s) => (s || "").trim();
+
+    // Get the table (use your own handle if needed)
+    const table =
+      document.querySelector("#tbl_tasks") || ($0 && $0.closest("table"));
+    if (!table) {
+      throw new Error(
+        "Table not found. Set cursor on a table element or ensure #tbl_tasks exists."
+      );
+    }
+
+    // Collect ALL header rows across ALL <thead> blocks
+    const allHeaderRows = Array.from(table.querySelectorAll("thead tr"));
+
+    // Pick the label row (the one with visible text, not inputs)
+    const labelRow =
+      allHeaderRows.find(
+        (r) =>
+          !r.querySelector("input") &&
+          Array.from(r.cells).some((c) => norm(c.textContent))
+      ) || allHeaderRows[0];
+
+    if (!labelRow) {
+      throw new Error("No header label row found.");
+    }
+
+    // Determine column indexes to remove based on the label row
+    const headerIndexesToRemove = [];
+    Array.from(labelRow.cells).forEach((cell, index) => {
+      const txt = norm(cell.textContent);
+      if (headerTextsToRemove.includes(txt)) {
+        headerIndexesToRemove.push(index);
+      }
+    });
+
+    // Nothing to do?
+    if (headerIndexesToRemove.length === 0) {
+      console.info("No matching headers found:", headerTextsToRemove);
+    } else {
+      // Remove from right to left to keep indexes stable
+      const desc = [...headerIndexesToRemove].sort((a, b) => b - a);
+
+      // 1) Remove from every header row in every <thead>
+      for (const hr of allHeaderRows) {
+        for (const idx of desc) {
+          if (hr.cells[idx]) hr.deleteCell(idx);
+        }
+      }
+
+      // 2) Remove from every body row
+      const bodyRows = table.tBodies
+        ? Array.from(table.tBodies).flatMap((tb) => Array.from(tb.rows))
+        : Array.from(table.querySelectorAll("tbody tr"));
+
+      for (const row of bodyRows) {
+        for (const idx of desc) {
+          if (row.cells[idx]) row.deleteCell(idx);
+        }
+      }
     }
   }
 }

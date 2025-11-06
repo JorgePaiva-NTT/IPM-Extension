@@ -1,29 +1,25 @@
 "use strict";
 
 var currentUrl = window.location.href;
-if (currentUrl.endsWith('/'));
-  currentUrl = currentUrl.slice(0, -1);
-const urlPaths = currentUrl.split('/');
-const cliente = urlPaths[urlPaths.length-1];
-
+if (currentUrl.endsWith("/"));
+currentUrl = currentUrl.slice(0, -1);
+const urlPaths = currentUrl.split("/");
+const cliente = urlPaths[urlPaths.length - 1];
 
 /**
  * FOLDER STUFF
  */
-if (!currentUrl.includes('ipm.macwin.pt')) 
-{
-  let body = document.querySelector('body');
-  if (window.location.href.endsWith('.htm')){
-    body.style.backgroundColor = 'white';
-  }
-  else {
-    body.style.backgroundColor = '#2b2a33';
+if (!currentUrl.includes("ipm.macwin.pt")) {
+  let body = document.querySelector("body");
+  if (window.location.href.endsWith(".htm")) {
+    body.style.backgroundColor = "white";
+  } else {
+    body.style.backgroundColor = "#2b2a33";
   }
 
   // Get header element and trim the text content
   const header = document.getElementById("header");
-  if (header !== null && header !== undefined)
-  {
+  if (header !== null && header !== undefined) {
     header.textContent = header.textContent.trim();
     // Set the header text content to ~ if it is empty
     if (header.textContent === "") {
@@ -39,41 +35,41 @@ if (!currentUrl.includes('ipm.macwin.pt'))
     }
   }
 
-  const bodyPre = document.querySelector('body:has(pre)');
+  const bodyPre = document.querySelector("body:has(pre)");
   if (bodyPre !== null) {
-
-    const pre = bodyPre.querySelector('pre');
+    const pre = bodyPre.querySelector("pre");
 
     var tag = document.createElement("div");
-    tag.id  = 'parentDirLinkBox';
-    tag.style += 'display: block; position: sticky; top: 100px; transform: translate(-180px, 0px); height: 0px; display: flex; flex-direction: column; width: 100px;'
+    tag.id = "parentDirLinkBox";
+    tag.style +=
+      "display: block; position: sticky; top: 100px; transform: translate(-180px, 0px); height: 0px; display: flex; flex-direction: column; width: 100px;";
 
-    var tagChild = document.createElement('button');
-    tagChild.id = 'back';
-    tagChild.class ='icon up';
-    tagChild.onclick = function() {
+    var tagChild = document.createElement("button");
+    tagChild.id = "back";
+    tagChild.class = "icon up";
+    tagChild.onclick = function () {
       urlPaths.pop();
-      var reqUrl = urlPaths.join('/');
+      var reqUrl = urlPaths.join("/");
       window.location = reqUrl;
-    }
+    };
 
-    var childSpan = document.createElement('span');
-    childSpan.id = 'parendDirText';
-    childSpan.textContent = 'Back';
-    
+    var childSpan = document.createElement("span");
+    childSpan.id = "parendDirText";
+    childSpan.textContent = "Back";
+
     tagChild.appendChild(childSpan);
 
-    var btnCpyUrl = document.createElement('button');
-    btnCpyUrl.id = 'cpyurl';
-    btnCpyUrl.class ='icon up';
-    btnCpyUrl.onclick = function() {
+    var btnCpyUrl = document.createElement("button");
+    btnCpyUrl.id = "cpyurl";
+    btnCpyUrl.class = "icon up";
+    btnCpyUrl.onclick = function () {
       navigator.clipboard.writeText(window.location.href);
       alert("Text copied: " + window.location.href);
-    }
-    var btnCpyUrlchildSpan = document.createElement('span');
-    btnCpyUrlchildSpan.id = 'parendDirTextCpy';
-    btnCpyUrlchildSpan.textContent = 'Copy Path';
-    
+    };
+    var btnCpyUrlchildSpan = document.createElement("span");
+    btnCpyUrlchildSpan.id = "parendDirTextCpy";
+    btnCpyUrlchildSpan.textContent = "Copy Path";
+
     btnCpyUrl.appendChild(btnCpyUrlchildSpan);
 
     tag.appendChild(tagChild);
@@ -82,25 +78,23 @@ if (!currentUrl.includes('ipm.macwin.pt'))
     bodyPre.insertBefore(tag, pre);
   }
 
-  var h1 = document.querySelector('h1#header');
+  var h1 = document.querySelector("h1#header");
   if (h1 !== null) {
-    h1.textContent = '';
-    var ul = document.createElement('ul');
-    ul.classList.add('breadcrumb');
+    h1.textContent = "";
+    var ul = document.createElement("ul");
+    ul.classList.add("breadcrumb");
     h1.appendChild(ul);
-    var pathUpTo = '//';
-    urlPaths.forEach(path => 
-    {
-      if (path === 'file:' || path === '/' || path === ' ' || path === '')
+    var pathUpTo = "//";
+    urlPaths.forEach((path) => {
+      if (path === "file:" || path === "/" || path === " " || path === "")
         return;
-      pathUpTo += path + '/';
-      var li = document.createElement('li');
-      var a = document.createElement('a');
+      pathUpTo += path + "/";
+      var li = document.createElement("li");
+      var a = document.createElement("a");
       a.textContent = path;
-      if (path === 'terra') {
-        a.href = ''; 
-      }
-      else {
+      if (path === "terra") {
+        a.href = "";
+      } else {
         a.href = pathUpTo;
       }
       li.appendChild(a);
@@ -110,14 +104,13 @@ if (!currentUrl.includes('ipm.macwin.pt'))
 
   // Shorten the text content of links that are too long
   const links = document.querySelectorAll("a");
-  const trs = document.querySelectorAll('tr');
+  const trs = document.querySelectorAll("tr");
 
-  trs.forEach(tr => {
-    const contentA = tr.querySelector('td>a');
-    if(contentA !== null && contentA.textContent===cliente+'.txt')
-    {
-      tr.style.border = '1px solid yellow';
-    } 
+  trs.forEach((tr) => {
+    const contentA = tr.querySelector("td>a");
+    if (contentA !== null && contentA.textContent === cliente + ".txt") {
+      tr.style.border = "1px solid yellow";
+    }
   });
 
   links.forEach((link) => {
@@ -127,21 +120,19 @@ if (!currentUrl.includes('ipm.macwin.pt'))
   });
 }
 
-const el1 = document.querySelector('#select_team_container > .ui-multiselect');
+const el1 = document.querySelector("#select_team_container > .ui-multiselect");
 if (el1) {
-  el1.style.setProperty('min-width', '210px', 'important');
-  el1.style.setProperty('margin-top', '3px', 'important');
+  el1.style.setProperty("min-width", "210px", "important");
+  el1.style.setProperty("margin-top", "3px", "important");
 }
 
 const el2 = document.querySelector("#my_tasks > div:nth-child(8)");
 if (el2) {
-  el2.style.setProperty('margin-bottom', '20px', 'important');
+  el2.style.setProperty("margin-bottom", "20px", "important");
 }
 
-
-document.querySelectorAll("#formSearch > fieldset > dl > div").forEach(div => {
-  div.style.flexDirection = "row";
-});
-
-
-
+document
+  .querySelectorAll("#formSearch > fieldset > dl > div")
+  .forEach((div) => {
+    div.style.flexDirection = "row";
+  });
